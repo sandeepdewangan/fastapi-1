@@ -7,10 +7,14 @@ import models
 from database import engine, SessionLocal
 from sqlalchemy.orm import Session
 from starlette import status
+from routers import auth
 
 app = FastAPI()
 
 models.Base.metadata.create_all(bind=engine)
+
+# Get the Auth Router
+app.include_router(auth.router)
 
 
 # After every API request db is closed.
