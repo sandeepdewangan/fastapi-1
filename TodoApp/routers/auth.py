@@ -8,6 +8,8 @@ from starlette import status
 from database import SessionLocal
 from models import Users
 
+from fastapi.security import OAuth2PasswordRequestForm
+
 router =  APIRouter()
 
 
@@ -29,6 +31,12 @@ class CreateUserRequest(BaseModel):
     password:str
     role:str
 
+def authenticate_user(username:str, password:str, db):
+    user = db.query(Users).filter(Users.username == username).first()
+    if not user:
+        return False
+    return True
+
 @router.post("/auth", status_code=status.HTTP_201_CREATED)
 def create_user(db: db_dependency, user_req: CreateUserRequest):
     user = Users(
@@ -42,4 +50,11 @@ def create_user(db: db_dependency, user_req: CreateUserRequest):
     )
     db.add(user)
     db.commit()
+
+@router.post("/token")
+def login_for_acces_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db:db_dependency):
+    user = authenticate_user(form_data.username, form_data.password, db)
+    if not user:
+        return 'Failed Authentication'
+    return'Successfull Authentication'
 
