@@ -7,6 +7,8 @@ from database import engine, SessionLocal
 from sqlalchemy.orm import Session
 from starlette import status
 
+from .auth import get_current_user
+
 router = APIRouter()
 
 
@@ -21,6 +23,7 @@ def get_db():
 
 # read_all depends on get_db, injected through DI
 db_dependency = Annotated[Session, Depends(get_db)]
+user_dependency = Annotated[dict, Depends(get_current_user)];
 
 # API Request Class
 class TodoRequest(BaseModel):
@@ -43,8 +46,10 @@ def read_todo(db: db_dependency, id:int = Path(gt=0)):
     raise HTTPException(status_code=404, detail="Todo not found")
 
 @router.post("/todos", status_code=status.HTTP_201_CREATED)
-def todo_create(db: db_dependency, todo:TodoRequest):
-    newtodo = Todo(**todo.model_dump())
+def todo_create(user:user_dependency, db: db_dependency, todo:TodoRequest):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Authentication failed.")
+    newtodo = Todo(**todo.model_dump(), owner_id=user.get('id'))
     db.add(newtodo)
     db.commit()
 
